@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import TeamLeader from "./pages/TeamLeader";
 import Tasks from "./pages/Tasks";
 import Shifts from "./pages/Shifts";
 import Approvals from "./pages/Approvals";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
             <Route path="/shifts" element={<ProtectedRoute allowedRoles={["director", "manager"]}><Shifts /></ProtectedRoute>} />
             <Route path="/my-shift" element={<ProtectedRoute allowedRoles={["support_worker", "team_leader"]}><SupportWorkerShift /></ProtectedRoute>} />
+            <Route path="/team-leader" element={<ProtectedRoute allowedRoles={["team_leader"]}><TeamLeader /></ProtectedRoute>} />
             <Route path="/approvals" element={<ProtectedRoute allowedRoles={["director"]}><Approvals /></ProtectedRoute>} />
             <Route path="/shift-review" element={<ProtectedRoute allowedRoles={["director"]}><ShiftReview /></ProtectedRoute>} />
             <Route path="/clients" element={<ProtectedRoute allowedRoles={["director", "manager"]}><Clients /></ProtectedRoute>} />

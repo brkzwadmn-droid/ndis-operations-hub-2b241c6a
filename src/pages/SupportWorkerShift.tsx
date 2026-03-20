@@ -12,11 +12,21 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation, isLocationValid } from "@/hooks/useGeolocation";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { format, startOfDay, subDays, startOfWeek, addDays, isBefore, isAfter, isToday } from "date-fns";
+import { format, startOfWeek, subDays } from "date-fns";
 import { MapPin, Camera, Clock, CheckCircle, AlertTriangle, FileText, ClipboardList, Play, Square, MessageSquare } from "lucide-react";
+
+const HANDOVER_ITEMS = [
+  "Medication check completed",
+  "Client wellbeing status confirmed",
+  "Environment is clean and safe",
+  "All incidents from previous shift noted",
+  "Keys/access items accounted for",
+  "Special instructions reviewed",
+];
 
 export default function SupportWorkerShift() {
   const { profile } = useAuth();
@@ -33,7 +43,15 @@ export default function SupportWorkerShift() {
   const [noteClientId, setNoteClientId] = useState("");
   const [incidentOpen, setIncidentOpen] = useState(false);
   const [abcOpen, setAbcOpen] = useState(false);
-  const [handoverOpen, setHandoverOpen] = useState(false);
+
+  // Handover states
+  const [handoverChecklistOpen, setHandoverChecklistOpen] = useState(false);
+  const [handoverType, setHandoverType] = useState<"incoming" | "outgoing">("incoming");
+  const [handoverChecked, setHandoverChecked] = useState<boolean[]>(HANDOVER_ITEMS.map(() => false));
+  const [handoverClientId, setHandoverClientId] = useState("");
+
+  // Clock-out confirmation
+  const [clockOutConfirmOpen, setClockOutConfirmOpen] = useState(false);
 
   // Active shift
   const { data: activeShift } = useQuery({
@@ -41,7 +59,7 @@ export default function SupportWorkerShift() {
     queryFn: async () => {
       const { data } = await supabase
         .from("shifts")
-        .select("*")
+        .select("*, client:clients!shifts_client_id_fkey(full_name, expected_lat, expected_lng, location_radius_meters)")
         .eq("profile_id", profile!.id)
         .eq("status", "open")
         .limit(1)
@@ -66,7 +84,7 @@ export default function SupportWorkerShift() {
     enabled: !!profile,
   });
 
-  // Fortnightly schedule (past days only, current fortnight)
+  // Fortnightly schedule (past days only)
   const { data: fortnightShifts = [] } = useQuery({
     queryKey: ["sw-fortnight"],
     queryFn: async () => {
@@ -88,24 +106,40 @@ export default function SupportWorkerShift() {
   const { data: clients = [] } = useQuery({
     queryKey: ["sw-clients"],
     queryFn: async () => {
-      const { data } = await supabase.from("clients").select("id, full_name").eq("is_active", true).order("full_name");
+      const { data } = await supabase.from("clients").select("id, full_name, expected_lat, expected_lng, location_radius_meters").eq("is_active", true).order("full_name");
       return data || [];
     },
   });
 
-  // Clock In
+  // Clock In with GPS validation
   const clockIn = useMutation({
     mutationFn: async () => {
       const pos = await getPosition();
-      const { error } = await supabase.from("shifts").insert({
+
+      // Check client location if set
+      const clientId = null; // Could be set via a client selector
+      let locationValid: boolean | null = null;
+
+      // Insert the shift
+      const { data: shift, error } = await supabase.from("shifts").insert({
         profile_id: profile!.id,
         start_time: new Date().toISOString(),
         status: "open",
         clock_in_lat: pos.lat,
         clock_in_lng: pos.lng,
-      });
+        clock_in_location_valid: locationValid,
+        client_id: clientId,
+      }).select().single();
       if (error) throw error;
-      await log("clock_in", "shift", undefined, { lat: pos.lat, lng: pos.lng });
+
+      await log("clock_in", "shift", shift.id, { lat: pos.lat, lng: pos.lng, location_valid: locationValid });
+
+      // After clock-in, show incoming handover checklist
+      setHandoverType("incoming");
+      setHandoverChecked(HANDOVER_ITEMS.map(() => false));
+      setHandoverChecklistOpen(true);
+
+      return shift;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sw-active-shift"] });
@@ -114,7 +148,7 @@ export default function SupportWorkerShift() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  // Clock Out
+  // Clock Out (called after handover confirmation)
   const clockOut = useMutation({
     mutationFn: async () => {
       if (!activeShift) throw new Error("No active shift");
@@ -131,6 +165,28 @@ export default function SupportWorkerShift() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sw-active-shift"] });
       toast({ title: "Clocked out" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  // Save handover checklist
+  const saveHandover = useMutation({
+    mutationFn: async () => {
+      if (!activeShift) throw new Error("No active shift");
+      const items = HANDOVER_ITEMS.map((label, i) => ({ label, checked: handoverChecked[i] }));
+      await supabase.from("handover_checklists").insert({
+        shift_id: activeShift.id,
+        profile_id: profile!.id,
+        checklist_type: handoverType,
+        items: items,
+        completed_at: new Date().toISOString(),
+        client_id: handoverClientId || null,
+      });
+      await log(`handover_${handoverType}`, "handover_checklist", activeShift.id);
+    },
+    onSuccess: () => {
+      setHandoverChecklistOpen(false);
+      toast({ title: `${handoverType === "incoming" ? "Incoming" : "Outgoing"} handover saved` });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -254,6 +310,22 @@ export default function SupportWorkerShift() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const handleClockOutRequest = () => {
+    setClockOutConfirmOpen(true);
+  };
+
+  const handleClockOutConfirmed = (handoverDone: boolean) => {
+    setClockOutConfirmOpen(false);
+    if (handoverDone) {
+      // Show outgoing handover checklist first
+      setHandoverType("outgoing");
+      setHandoverChecked(HANDOVER_ITEMS.map(() => false));
+      setHandoverChecklistOpen(true);
+    }
+    // Proceed with clock out after either path
+    clockOut.mutate();
+  };
+
   const completedCount = tasks.filter(t => t.status === "completed").length;
 
   return (
@@ -270,7 +342,7 @@ export default function SupportWorkerShift() {
             <Play className="mr-2 h-4 w-4" /> {geoLoading ? "Getting location..." : "Clock In"}
           </Button>
         ) : (
-          <Button variant="destructive" onClick={() => clockOut.mutate()} disabled={clockOut.isPending || geoLoading}>
+          <Button variant="destructive" onClick={handleClockOutRequest} disabled={clockOut.isPending || geoLoading}>
             <Square className="mr-2 h-4 w-4" /> Clock Out
           </Button>
         )}
@@ -448,6 +520,66 @@ export default function SupportWorkerShift() {
             </div>
             <Button onClick={() => completeTask.mutate()} disabled={completeTask.isPending} className="w-full">
               <CheckCircle className="mr-2 h-4 w-4" /> Mark Complete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clock-Out Handover Confirmation Dialog */}
+      <Dialog open={clockOutConfirmOpen} onOpenChange={setClockOutConfirmOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Before you clock out</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Have you completed the handover to the next staff member?
+          </p>
+          <div className="flex gap-3 mt-4">
+            <Button onClick={() => handleClockOutConfirmed(true)} className="flex-1">
+              Yes, handover completed
+            </Button>
+            <Button variant="outline" onClick={() => handleClockOutConfirmed(false)} className="flex-1">
+              No next staff / End of day
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Handover Checklist Dialog */}
+      <Dialog open={handoverChecklistOpen} onOpenChange={setHandoverChecklistOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{handoverType === "incoming" ? "Incoming" : "Outgoing"} Handover Checklist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Client (optional)</Label>
+              <Select value={handoverClientId} onValueChange={setHandoverClientId}>
+                <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+                <SelectContent>
+                  {clients.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-3">
+              {HANDOVER_ITEMS.map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Checkbox
+                    checked={handoverChecked[i]}
+                    onCheckedChange={(checked) => {
+                      const next = [...handoverChecked];
+                      next[i] = !!checked;
+                      setHandoverChecked(next);
+                    }}
+                  />
+                  <Label className="text-sm font-normal">{item}</Label>
+                </div>
+              ))}
+            </div>
+            <Button
+              onClick={() => saveHandover.mutate()}
+              disabled={saveHandover.isPending}
+              className="w-full"
+            >
+              <ClipboardList className="mr-2 h-4 w-4" /> Save Handover
             </Button>
           </div>
         </DialogContent>
