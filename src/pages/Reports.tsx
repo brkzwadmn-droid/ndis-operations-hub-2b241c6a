@@ -79,10 +79,10 @@ export default function Reports() {
       <div className="flex flex-wrap gap-3 mb-6">
         <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-44" />
         <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-44" />
-        <Select value={staffFilter} onValueChange={setStaffFilter}>
+        <Select value={staffFilter} onValueChange={(val) => setStaffFilter(val === "all" ? "" : val)}>
           <SelectTrigger className="w-48"><SelectValue placeholder="All staff" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Staff</SelectItem>
+            <SelectItem value="all">All Staff</SelectItem>
             {staff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
