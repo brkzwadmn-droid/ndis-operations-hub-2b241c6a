@@ -33,6 +33,22 @@ export default function Tasks() {
   const [incompleteReason, setIncompleteReason] = useState("");
   const [photoRequired, setPhotoRequired] = useState(true);
 
+  // Check if user has an active shift
+  const { data: activeShift } = useQuery({
+    queryKey: ["my-active-shift-for-tasks"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("shifts")
+        .select("id")
+        .eq("profile_id", profile!.id)
+        .eq("status", "open")
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!profile && !isDirector,
+  });
+
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
