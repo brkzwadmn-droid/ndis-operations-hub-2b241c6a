@@ -13,20 +13,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, TrendingUp, TrendingDown, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function Finance() {
   const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 1), "yyyy-MM-dd"));
+  const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
 
   const { data: entries = [] } = useQuery({
-    queryKey: ["finance-entries"],
+    queryKey: ["finance-entries", dateFrom, dateTo],
     queryFn: async () => {
       const { data } = await supabase
         .from("finance_entries")
         .select("*")
+        .gte("entry_date", dateFrom)
+        .lte("entry_date", dateTo)
         .order("entry_date", { ascending: false });
       return data || [];
     },
@@ -34,6 +39,23 @@ export default function Finance() {
 
   const income = entries.filter(e => e.type === "income").reduce((s, e) => s + Number(e.amount), 0);
   const expense = entries.filter(e => e.type === "expense").reduce((s, e) => s + Number(e.amount), 0);
+
+  // Build chart data grouped by week
+  const chartData = (() => {
+    const weeks = eachWeekOfInterval({ start: new Date(dateFrom), end: new Date(dateTo) }, { weekStartsOn: 1 });
+    return weeks.map((weekStart, i) => {
+      const weekEnd = i < weeks.length - 1 ? weeks[i + 1] : new Date(dateTo);
+      const weekEntries = entries.filter(e => {
+        const d = new Date(e.entry_date);
+        return d >= weekStart && d < weekEnd;
+      });
+      return {
+        name: format(weekStart, "MMM d"),
+        income: weekEntries.filter(e => e.type === "income").reduce((s, e) => s + Number(e.amount), 0),
+        expense: weekEntries.filter(e => e.type === "expense").reduce((s, e) => s + Number(e.amount), 0),
+      };
+    });
+  })();
 
   const createEntry = useMutation({
     mutationFn: async (form: FormData) => {
@@ -101,17 +123,43 @@ export default function Finance() {
         </Dialog>
       </div>
 
+      {/* Date range filters */}
+      <div className="flex gap-3 mb-6">
+        <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-44" />
+        <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-44" />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3 mb-8">
         <StatCard title="Total Income" value={`$${income.toLocaleString()}`} icon={TrendingUp} />
         <StatCard title="Total Expenses" value={`$${expense.toLocaleString()}`} icon={TrendingDown} />
         <StatCard title="Profit/Loss" value={`$${(income - expense).toLocaleString()}`} icon={DollarSign} />
       </div>
 
+      {/* Chart */}
+      {chartData.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader><CardTitle className="text-lg">Weekly Breakdown</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="income" fill="hsl(var(--primary))" name="Income" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
-        <CardHeader><CardTitle className="text-lg">Recent Entries</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Entries</CardTitle></CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No entries yet</p>
+            <p className="text-sm text-muted-foreground">No entries in this range</p>
           ) : (
             <div className="space-y-3">
               {entries.map((entry) => (
@@ -124,7 +172,7 @@ export default function Finance() {
                     <Badge variant={entry.type === "income" ? "default" : "destructive"}>
                       {entry.type}
                     </Badge>
-                    <span className={`text-sm font-semibold ${entry.type === "income" ? "text-success" : "text-destructive"}`}>
+                    <span className={`text-sm font-semibold ${entry.type === "income" ? "text-primary" : "text-destructive"}`}>
                       ${Number(entry.amount).toLocaleString()}
                     </span>
                   </div>
