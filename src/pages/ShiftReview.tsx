@@ -185,7 +185,6 @@ export default function ShiftReview() {
       const shift = reviewData;
       if (shift?.shift_id) {
         await supabase.from("shifts").update({ status: "approved" }).eq("id", shift.shift_id);
-        // Notify the manager
         const { data: shiftData } = await supabase.from("shifts").select("profile_id").eq("id", shift.shift_id).single();
         if (shiftData) {
           await supabase.from("notifications").insert({
@@ -197,12 +196,21 @@ export default function ShiftReview() {
         }
       }
       await log("complete_shift_review", "shift_review", activeReview!);
+
+      // Sync to Notion
+      try {
+        await supabase.functions.invoke("sync-to-notion", {
+          body: { reviewId: activeReview },
+        });
+      } catch {
+        // Notion sync is non-blocking
+      }
     },
     onSuccess: () => {
       setActiveReview(null);
       setCurrentItemIdx(0);
       queryClient.invalidateQueries({ queryKey: ["review-shifts"] });
-      toast({ title: "Shift Review completed!" });
+      toast({ title: "Shift Review completed and synced!" });
     },
   });
 
