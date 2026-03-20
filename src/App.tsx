@@ -20,6 +20,7 @@ import ShiftReview from "./pages/ShiftReview";
 import AuditLog from "./pages/AuditLog";
 import Reports from "./pages/Reports";
 import SupportWorkerShift from "./pages/SupportWorkerShift";
+import StaffManagement from "./pages/StaffManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/finance" element={<ProtectedRoute allowedRoles={["director"]}><Finance /></ProtectedRoute>} />
             <Route path="/staff" element={<ProtectedRoute allowedRoles={["director"]}><Staff /></ProtectedRoute>} />
+            <Route path="/staff-management" element={<ProtectedRoute allowedRoles={["director"]}><StaffManagement /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute allowedRoles={["director"]}><Reports /></ProtectedRoute>} />
             <Route path="/audit-log" element={<ProtectedRoute allowedRoles={["director"]}><AuditLog /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

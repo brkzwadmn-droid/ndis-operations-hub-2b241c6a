@@ -33,6 +33,22 @@ export default function Tasks() {
   const [incompleteReason, setIncompleteReason] = useState("");
   const [photoRequired, setPhotoRequired] = useState(true);
 
+  // Check if user has an active shift
+  const { data: activeShift } = useQuery({
+    queryKey: ["my-active-shift-for-tasks"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("shifts")
+        .select("id")
+        .eq("profile_id", profile!.id)
+        .eq("status", "open")
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!profile && !isDirector,
+  });
+
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
@@ -101,6 +117,7 @@ export default function Tasks() {
 
   const completeTask = useMutation({
     mutationFn: async () => {
+      if (!isDirector && !activeShift) throw new Error("You must start your shift before completing tasks.");
       if (!comment.trim()) throw new Error("Comment is required");
       if (selectedTask?.photo_required && !photoFile) throw new Error("Photo is required for this task");
 
@@ -278,7 +295,20 @@ export default function Tasks() {
                   <Badge variant={task.status === "completed" ? "default" : "secondary"}>{task.status}</Badge>
                   {task.status !== "completed" && !isDirector && (
                     <div className="flex gap-1">
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedTask(task); setCompleteOpen(true); }}>Complete</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (!activeShift) {
+                            toast({ title: "Shift not started", description: "You must start your shift before completing tasks.", variant: "destructive" });
+                            return;
+                          }
+                          setSelectedTask(task);
+                          setCompleteOpen(true);
+                        }}
+                      >
+                        Complete
+                      </Button>
                       {!task.incomplete_reason && (
                         <Button size="sm" variant="ghost" onClick={() => { setSelectedTask(task); setIncompleteOpen(true); }}>
                           <AlertCircle className="h-3 w-3" />

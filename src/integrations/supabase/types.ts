@@ -689,6 +689,60 @@ export type Database = {
           },
         ]
       }
+      staff_changes: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          operation: string
+          payload: Json
+          requested_by: string
+          status: string
+          target_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          operation: string
+          payload?: Json
+          requested_by: string
+          status?: string
+          target_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          operation?: string
+          payload?: Json
+          requested_by?: string
+          status?: string
+          target_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_changes_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_changes_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           added_by_self: boolean
