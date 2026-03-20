@@ -117,6 +117,7 @@ export default function Tasks() {
 
   const completeTask = useMutation({
     mutationFn: async () => {
+      if (!isDirector && !activeShift) throw new Error("You must start your shift before completing tasks.");
       if (!comment.trim()) throw new Error("Comment is required");
       if (selectedTask?.photo_required && !photoFile) throw new Error("Photo is required for this task");
 
