@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import TeamLeader from "./pages/TeamLeader";
 import Tasks from "./pages/Tasks";
 import Shifts from "./pages/Shifts";
 import Approvals from "./pages/Approvals";
