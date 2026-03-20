@@ -14,6 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
+      abc_charts: {
+        Row: {
+          antecedent: string
+          behaviour: string
+          client_id: string
+          consequence: string
+          created_at: string
+          id: string
+          notes: string | null
+          occurred_at: string
+          profile_id: string
+          shift_id: string
+        }
+        Insert: {
+          antecedent: string
+          behaviour: string
+          client_id: string
+          consequence: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          profile_id: string
+          shift_id: string
+        }
+        Update: {
+          antecedent?: string
+          behaviour?: string
+          client_id?: string
+          consequence?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          profile_id?: string
+          shift_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abc_charts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abc_charts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abc_charts_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          profile_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          profile_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          date_of_birth: string | null
+          expected_lat: number | null
+          expected_lng: number | null
+          full_name: string
+          id: string
+          is_active: boolean
+          location_radius_meters: number | null
+          ndis_number: string | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          expected_lat?: number | null
+          expected_lng?: number | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          location_radius_meters?: number | null
+          ndis_number?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          expected_lat?: number | null
+          expected_lng?: number | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          location_radius_meters?: number | null
+          ndis_number?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       finance_entries: {
         Row: {
           amount: number
@@ -48,6 +201,125 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      handover_checklists: {
+        Row: {
+          checklist_type: string
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          items: Json
+          photo_url: string | null
+          profile_id: string
+          shift_id: string
+        }
+        Insert: {
+          checklist_type?: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          photo_url?: string | null
+          profile_id: string
+          shift_id: string
+        }
+        Update: {
+          checklist_type?: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          photo_url?: string | null
+          profile_id?: string
+          shift_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handover_checklists_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handover_checklists_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handover_checklists_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_reports: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string
+          id: string
+          photo_url: string | null
+          profile_id: string
+          severity: string
+          shift_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description: string
+          id?: string
+          photo_url?: string | null
+          profile_id: string
+          severity?: string
+          shift_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          photo_url?: string | null
+          profile_id?: string
+          severity?: string
+          shift_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reports_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reports_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
             referencedColumns: ["id"]
           },
         ]
@@ -120,6 +392,61 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_notes: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string
+          id: string
+          photo_url: string | null
+          profile_id: string
+          shift_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          profile_id: string
+          shift_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          profile_id?: string
+          shift_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_notes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_notes_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_approvals: {
         Row: {
           created_at: string
@@ -162,10 +489,146 @@ export type Database = {
           },
         ]
       }
-      shifts: {
+      shift_review_items: {
         Row: {
           created_at: string
+          decision: string | null
+          director1_approved: boolean | null
+          director2_approved: boolean | null
+          id: string
+          notes: string | null
+          reassigned_date: string | null
+          reassigned_to: string | null
+          review_id: string
+          status: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string | null
+          director1_approved?: boolean | null
+          director2_approved?: boolean | null
+          id?: string
+          notes?: string | null
+          reassigned_date?: string | null
+          reassigned_to?: string | null
+          review_id: string
+          status?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string | null
+          director1_approved?: boolean | null
+          director2_approved?: boolean | null
+          id?: string
+          notes?: string | null
+          reassigned_date?: string | null
+          reassigned_to?: string | null
+          review_id?: string
+          status?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_review_items_reassigned_to_fkey"
+            columns: ["reassigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_review_items_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "shift_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_review_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_reviews: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          director1_id: string
+          director2_id: string | null
+          id: string
+          shift_id: string
+          started_at: string
+          status: string
+          summary_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          director1_id: string
+          director2_id?: string | null
+          id?: string
+          shift_id: string
+          started_at?: string
+          status?: string
+          summary_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          director1_id?: string
+          director2_id?: string | null
+          id?: string
+          shift_id?: string
+          started_at?: string
+          status?: string
+          summary_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_reviews_director1_id_fkey"
+            columns: ["director1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_reviews_director2_id_fkey"
+            columns: ["director2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_reviews_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          client_id: string | null
+          clock_in_lat: number | null
+          clock_in_lng: number | null
+          clock_in_location_valid: boolean | null
+          clock_out_lat: number | null
+          clock_out_lng: number | null
+          clock_out_location_valid: boolean | null
+          created_at: string
           end_time: string | null
+          handover_completed: boolean | null
           id: string
           notes: string | null
           profile_id: string
@@ -174,8 +637,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
+          clock_in_lat?: number | null
+          clock_in_lng?: number | null
+          clock_in_location_valid?: boolean | null
+          clock_out_lat?: number | null
+          clock_out_lng?: number | null
+          clock_out_location_valid?: boolean | null
           created_at?: string
           end_time?: string | null
+          handover_completed?: boolean | null
           id?: string
           notes?: string | null
           profile_id: string
@@ -184,8 +655,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
+          clock_in_lat?: number | null
+          clock_in_lng?: number | null
+          clock_in_location_valid?: boolean | null
+          clock_out_lat?: number | null
+          clock_out_lng?: number | null
+          clock_out_location_valid?: boolean | null
           created_at?: string
           end_time?: string | null
+          handover_completed?: boolean | null
           id?: string
           notes?: string | null
           profile_id?: string
@@ -194,6 +673,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shifts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shifts_profile_id_fkey"
             columns: ["profile_id"]
@@ -205,45 +691,57 @@ export type Database = {
       }
       tasks: {
         Row: {
+          added_by_self: boolean
           assigned_by: string
           assigned_to: string
+          client_id: string | null
           comment: string | null
           completed_at: string | null
           created_at: string
           description: string | null
           due_date: string
           id: string
+          incomplete_reason: string | null
           is_end_of_day: boolean
+          photo_required: boolean
           photo_url: string | null
           status: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at: string
         }
         Insert: {
+          added_by_self?: boolean
           assigned_by: string
           assigned_to: string
+          client_id?: string | null
           comment?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string
           id?: string
+          incomplete_reason?: string | null
           is_end_of_day?: boolean
+          photo_required?: boolean
           photo_url?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at?: string
         }
         Update: {
+          added_by_self?: boolean
           assigned_by?: string
           assigned_to?: string
+          client_id?: string | null
           comment?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string
           id?: string
+          incomplete_reason?: string | null
           is_end_of_day?: boolean
+          photo_required?: boolean
           photo_url?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
@@ -262,6 +760,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

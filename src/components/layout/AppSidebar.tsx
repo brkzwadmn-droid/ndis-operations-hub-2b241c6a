@@ -10,6 +10,11 @@ import {
   Users,
   LogOut,
   Shield,
+  UserCheck,
+  FileText,
+  ClipboardList,
+  BarChart3,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,9 +36,14 @@ const navItems: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", roles: ["director", "manager", "team_leader", "support_worker"] },
   { label: "Tasks", icon: ListTodo, href: "/tasks", roles: ["director", "manager", "team_leader", "support_worker"] },
   { label: "Shifts", icon: Clock, href: "/shifts", roles: ["director", "manager"] },
+  { label: "My Shift", icon: Clock, href: "/my-shift", roles: ["support_worker", "team_leader"] },
   { label: "Approvals", icon: CheckSquare, href: "/approvals", roles: ["director"] },
+  { label: "Shift Review", icon: ClipboardList, href: "/shift-review", roles: ["director"] },
+  { label: "Clients", icon: UserCheck, href: "/clients", roles: ["director", "manager"] },
   { label: "Staff", icon: Users, href: "/staff", roles: ["director"] },
   { label: "Finance", icon: DollarSign, href: "/finance", roles: ["director"] },
+  { label: "Reports", icon: BarChart3, href: "/reports", roles: ["director"] },
+  { label: "Audit Log", icon: ScrollText, href: "/audit-log", roles: ["director"] },
   { label: "Notifications", icon: Bell, href: "/notifications", roles: ["director", "manager", "team_leader", "support_worker"] },
 ];
 

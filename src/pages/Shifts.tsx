@@ -2,17 +2,21 @@ import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Square, Send, Clock } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { useAuditLog } from "@/hooks/useAuditLog";
+import { Play, Square, Send, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Shifts() {
   const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { getPosition, loading: geoLoading } = useGeolocation();
+  const { log } = useAuditLog();
   const isDirector = profile?.role === "director";
 
   const { data: shifts = [] } = useQuery({
@@ -48,12 +52,21 @@ export default function Shifts() {
 
   const startShift = useMutation({
     mutationFn: async () => {
+      let clockData: any = {};
+      try {
+        const pos = await getPosition();
+        clockData = { clock_in_lat: pos.lat, clock_in_lng: pos.lng };
+      } catch {
+        // proceed without GPS
+      }
       const { error } = await supabase.from("shifts").insert({
         profile_id: profile!.id,
         start_time: new Date().toISOString(),
         status: "open",
+        ...clockData,
       });
       if (error) throw error;
+      await log("start_shift", "shift", undefined, clockData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shifts"] });
@@ -66,11 +79,20 @@ export default function Shifts() {
       if (incompleteTasks > 0) {
         throw new Error(`You have ${incompleteTasks} incomplete task(s). Complete all tasks before closing your shift.`);
       }
+      let clockData: any = {};
+      try {
+        const pos = await getPosition();
+        clockData = { clock_out_lat: pos.lat, clock_out_lng: pos.lng };
+      } catch {
+        // proceed without GPS
+      }
       const { error } = await supabase.from("shifts").update({
         end_time: new Date().toISOString(),
         status: "closed",
+        ...clockData,
       }).eq("id", shiftId);
       if (error) throw error;
+      await log("close_shift", "shift", shiftId, clockData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shifts"] });
@@ -83,6 +105,18 @@ export default function Shifts() {
     mutationFn: async (shiftId: string) => {
       const { error } = await supabase.from("shifts").update({ status: "submitted" }).eq("id", shiftId);
       if (error) throw error;
+      // Notify directors
+      const { data: directors } = await supabase.from("profiles").select("id").eq("role", "director");
+      if (directors) {
+        const notifs = directors.map(d => ({
+          profile_id: d.id,
+          title: "Shift Submitted",
+          message: `${profile?.full_name} has submitted their shift for approval.`,
+          link: "/approvals",
+        }));
+        await supabase.from("notifications").insert(notifs);
+      }
+      await log("submit_shift", "shift", shiftId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shifts"] });
@@ -108,7 +142,7 @@ export default function Shifts() {
           <p className="text-muted-foreground">{isDirector ? "All staff shifts" : "Manage your shifts"}</p>
         </div>
         {!isDirector && !activeShift && (
-          <Button onClick={() => startShift.mutate()}>
+          <Button onClick={() => startShift.mutate()} disabled={geoLoading}>
             <Play className="mr-2 h-4 w-4" /> Start Shift
           </Button>
         )}
@@ -136,6 +170,9 @@ export default function Shifts() {
                   <div className="flex gap-3 text-xs text-muted-foreground">
                     {shift.start_time && <span>Start: {format(new Date(shift.start_time), "MMM d, h:mm a")}</span>}
                     {shift.end_time && <span>End: {format(new Date(shift.end_time), "h:mm a")}</span>}
+                    {(shift.clock_in_lat || shift.clock_out_lat) && (
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />GPS recorded</span>
+                    )}
                   </div>
                 </div>
                 {!isDirector && shift.profile_id === profile?.id && (
