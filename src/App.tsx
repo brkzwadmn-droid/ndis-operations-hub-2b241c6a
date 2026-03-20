@@ -20,6 +20,7 @@ import ShiftReview from "./pages/ShiftReview";
 import AuditLog from "./pages/AuditLog";
 import Reports from "./pages/Reports";
 import SupportWorkerShift from "./pages/SupportWorkerShift";
+import StaffManagement from "./pages/StaffManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
