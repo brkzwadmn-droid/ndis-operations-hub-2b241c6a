@@ -194,6 +194,7 @@ export default function SupportWorkerShift() {
   // Complete task
   const completeTask = useMutation({
     mutationFn: async () => {
+      if (!activeShift) throw new Error("You must clock in before completing tasks.");
       if (!comment.trim()) throw new Error("Comment is required");
       if (selectedTask?.photo_required && !photoFile) throw new Error("Photo is required for this task");
 

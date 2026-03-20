@@ -295,7 +295,20 @@ export default function Tasks() {
                   <Badge variant={task.status === "completed" ? "default" : "secondary"}>{task.status}</Badge>
                   {task.status !== "completed" && !isDirector && (
                     <div className="flex gap-1">
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedTask(task); setCompleteOpen(true); }}>Complete</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (!activeShift) {
+                            toast({ title: "Shift not started", description: "You must start your shift before completing tasks.", variant: "destructive" });
+                            return;
+                          }
+                          setSelectedTask(task);
+                          setCompleteOpen(true);
+                        }}
+                      >
+                        Complete
+                      </Button>
                       {!task.incomplete_reason && (
                         <Button size="sm" variant="ghost" onClick={() => { setSelectedTask(task); setIncompleteOpen(true); }}>
                           <AlertCircle className="h-3 w-3" />
