@@ -46,10 +46,10 @@ export default function AuditLog() {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
-        <Select value={filterUser} onValueChange={setFilterUser}>
+        <Select value={filterUser} onValueChange={(value) => setFilterUser(value === "all" ? "" : value)}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Filter by user" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Users</SelectItem>
+            <SelectItem value="all">All Users</SelectItem>
             {staff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
