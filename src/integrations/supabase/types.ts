@@ -556,6 +556,74 @@ export type Database = {
           },
         ]
       }
+      staff_details: {
+        Row: {
+          id: string
+          phone: string | null
+          personal_email: string | null
+          home_suburb: string | null
+          start_date: string | null
+          company: Database["public"]["Enums"]["company_enum"] | null
+          employment_type: Database["public"]["Enums"]["employment_type_enum"] | null
+          pay_rate: number | null
+          ndis_screening_number: string | null
+          ndis_screening_expiry: string | null
+          wwcc_number: string | null
+          wwcc_expiry: string | null
+          first_aid_expiry: string | null
+          cpr_expiry: string | null
+          police_check_issue_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          phone?: string | null
+          personal_email?: string | null
+          home_suburb?: string | null
+          start_date?: string | null
+          company?: Database["public"]["Enums"]["company_enum"] | null
+          employment_type?: Database["public"]["Enums"]["employment_type_enum"] | null
+          pay_rate?: number | null
+          ndis_screening_number?: string | null
+          ndis_screening_expiry?: string | null
+          wwcc_number?: string | null
+          wwcc_expiry?: string | null
+          first_aid_expiry?: string | null
+          cpr_expiry?: string | null
+          police_check_issue_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          phone?: string | null
+          personal_email?: string | null
+          home_suburb?: string | null
+          start_date?: string | null
+          company?: Database["public"]["Enums"]["company_enum"] | null
+          employment_type?: Database["public"]["Enums"]["employment_type_enum"] | null
+          pay_rate?: number | null
+          ndis_screening_number?: string | null
+          ndis_screening_expiry?: string | null
+          wwcc_number?: string | null
+          wwcc_expiry?: string | null
+          first_aid_expiry?: string | null
+          cpr_expiry?: string | null
+          police_check_issue_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_details_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       shift_reviews: {
         Row: {
           completed_at: string | null
@@ -856,8 +924,10 @@ export type Database = {
       is_manager: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "director" | "manager" | "team_leader" | "support_worker"
+      app_role: "director" | "admin" | "manager" | "team_leader" | "support_worker"
       approval_status: "pending" | "approved" | "rejected"
+      company_enum: "mars_hill" | "rehoboth"
+      employment_type_enum: "payroll" | "abn_contractor"
       finance_type: "income" | "expense"
       shift_status: "open" | "closed" | "submitted" | "approved" | "rejected"
       task_status: "pending" | "in_progress" | "completed"
@@ -988,7 +1058,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["director", "manager", "team_leader", "support_worker"],
+      app_role: ["director", "admin", "manager", "team_leader", "support_worker"],
       approval_status: ["pending", "approved", "rejected"],
       finance_type: ["income", "expense"],
       shift_status: ["open", "closed", "submitted", "approved", "rejected"],

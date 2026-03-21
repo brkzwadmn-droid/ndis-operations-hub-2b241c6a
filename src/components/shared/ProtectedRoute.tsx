@@ -20,7 +20,9 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (!session) return <Navigate to="/login" replace />;
 
-  if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+  // Admin role gets the same access as director
+  const effectiveRole = profile?.role === "admin" ? "director" : profile?.role;
+  if (allowedRoles && profile && !allowedRoles.includes(effectiveRole!)) {
     return <Navigate to="/dashboard" replace />;
   }
 

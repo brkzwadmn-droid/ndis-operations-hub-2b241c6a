@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 const roleLabels: Record<string, string> = {
   director: "Director",
+  admin: "Administrator",
   manager: "Manager",
   team_leader: "Team Leader",
   support_worker: "Support Worker",
@@ -41,7 +42,7 @@ const navItems: NavItem[] = [
   { label: "Shift Review", icon: ClipboardList, href: "/shift-review", roles: ["director"] },
   { label: "Clients", icon: UserCheck, href: "/clients", roles: ["director", "manager"] },
   { label: "Staff Overview", icon: Users, href: "/staff", roles: ["director"] },
-  { label: "Staff Management", icon: UserCheck, href: "/staff-management", roles: ["director"] },
+  { label: "Staff Management", icon: UserCheck, href: "/staff-management", roles: ["director", "manager"] },
   { label: "Finance", icon: DollarSign, href: "/finance", roles: ["director"] },
   { label: "Reports", icon: BarChart3, href: "/reports", roles: ["director"] },
   { label: "Audit Log", icon: ScrollText, href: "/audit-log", roles: ["director"] },
@@ -52,7 +53,9 @@ export default function AppSidebar() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const role = profile?.role || "support_worker";
+  const rawRole = profile?.role || "support_worker";
+  // Admin sees the same nav as director
+  const role = rawRole === "admin" ? "director" : rawRole;
 
   const filtered = navItems.filter((item) => item.roles.includes(role));
 
@@ -64,8 +67,8 @@ export default function AppSidebar() {
           <Shield className="h-5 w-5 text-sidebar-primary-foreground" />
         </div>
         <div>
-          <p className="text-sm font-display font-bold text-sidebar-foreground">NDIS ERP</p>
-          <p className="text-xs text-sidebar-foreground/60">{roleLabels[role]}</p>
+          <p className="text-sm font-display font-bold text-sidebar-foreground">Rehoboth</p>
+          <p className="text-xs text-sidebar-foreground/60">{roleLabels[rawRole]}</p>
         </div>
       </div>
 

@@ -21,6 +21,7 @@ import AuditLog from "./pages/AuditLog";
 import Reports from "./pages/Reports";
 import SupportWorkerShift from "./pages/SupportWorkerShift";
 import StaffManagement from "./pages/StaffManagement";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,21 +36,22 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-            <Route path="/shifts" element={<ProtectedRoute allowedRoles={["director", "manager"]}><Shifts /></ProtectedRoute>} />
+            <Route path="/shifts" element={<ProtectedRoute allowedRoles={["director", "admin", "manager"]}><Shifts /></ProtectedRoute>} />
             <Route path="/my-shift" element={<ProtectedRoute allowedRoles={["support_worker", "team_leader"]}><SupportWorkerShift /></ProtectedRoute>} />
             <Route path="/team-leader" element={<ProtectedRoute allowedRoles={["team_leader"]}><TeamLeader /></ProtectedRoute>} />
-            <Route path="/approvals" element={<ProtectedRoute allowedRoles={["director"]}><Approvals /></ProtectedRoute>} />
-            <Route path="/shift-review" element={<ProtectedRoute allowedRoles={["director"]}><ShiftReview /></ProtectedRoute>} />
-            <Route path="/clients" element={<ProtectedRoute allowedRoles={["director", "manager"]}><Clients /></ProtectedRoute>} />
-            <Route path="/clients/:clientId" element={<ProtectedRoute allowedRoles={["director", "manager"]}><ClientTimeline /></ProtectedRoute>} />
+            <Route path="/approvals" element={<ProtectedRoute allowedRoles={["director", "admin"]}><Approvals /></ProtectedRoute>} />
+            <Route path="/shift-review" element={<ProtectedRoute allowedRoles={["director", "admin"]}><ShiftReview /></ProtectedRoute>} />
+            <Route path="/clients" element={<ProtectedRoute allowedRoles={["director", "admin", "manager"]}><Clients /></ProtectedRoute>} />
+            <Route path="/clients/:clientId" element={<ProtectedRoute allowedRoles={["director", "admin", "manager"]}><ClientTimeline /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-            <Route path="/finance" element={<ProtectedRoute allowedRoles={["director"]}><Finance /></ProtectedRoute>} />
-            <Route path="/staff" element={<ProtectedRoute allowedRoles={["director"]}><Staff /></ProtectedRoute>} />
-            <Route path="/staff-management" element={<ProtectedRoute allowedRoles={["director"]}><StaffManagement /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute allowedRoles={["director"]}><Reports /></ProtectedRoute>} />
-            <Route path="/audit-log" element={<ProtectedRoute allowedRoles={["director"]}><AuditLog /></ProtectedRoute>} />
+            <Route path="/finance" element={<ProtectedRoute allowedRoles={["director", "admin"]}><Finance /></ProtectedRoute>} />
+            <Route path="/staff" element={<ProtectedRoute allowedRoles={["director", "admin"]}><Staff /></ProtectedRoute>} />
+            <Route path="/staff-management" element={<ProtectedRoute allowedRoles={["director", "admin", "manager"]}><StaffManagement /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute allowedRoles={["director", "admin"]}><Reports /></ProtectedRoute>} />
+            <Route path="/audit-log" element={<ProtectedRoute allowedRoles={["director", "admin"]}><AuditLog /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
