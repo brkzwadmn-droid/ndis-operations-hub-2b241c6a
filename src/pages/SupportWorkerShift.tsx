@@ -18,6 +18,7 @@ import { useGeolocation, isLocationValid } from "@/hooks/useGeolocation";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { format, startOfWeek, subDays } from "date-fns";
 import { MapPin, Camera, Clock, CheckCircle, AlertTriangle, FileText, ClipboardList, Play, Square, MessageSquare } from "lucide-react";
+import EarlyClockInDialog from "@/components/shift/EarlyClockInDialog";
 
 const HANDOVER_ITEMS = [
   "Medication check completed",
@@ -53,6 +54,10 @@ export default function SupportWorkerShift() {
   // Clock-out confirmation
   const [clockOutConfirmOpen, setClockOutConfirmOpen] = useState(false);
 
+  // Early clock-in denial
+  const [earlyClockInOpen, setEarlyClockInOpen] = useState(false);
+  const [earlyClockInScheduledStart, setEarlyClockInScheduledStart] = useState<Date>(new Date());
+
   // Active shift
   const { data: activeShift } = useQuery({
     queryKey: ["sw-active-shift"],
@@ -67,6 +72,26 @@ export default function SupportWorkerShift() {
       return data;
     },
     enabled: !!profile,
+  });
+
+  // Next upcoming shift (for early clock-in check)
+  // Checks ANY future shift regardless of status — covers 'scheduled', 'active', etc.
+  const { data: nextUpcomingShift } = useQuery({
+    queryKey: ["sw-next-upcoming"],
+    queryFn: async () => {
+      const now = new Date();
+      const { data } = await supabase
+        .from("shifts")
+        .select("id, start_time, end_time, scheduled_start, scheduled_end, client_id, status")
+        .eq("profile_id", profile!.id)
+        .gte("start_time", now.toISOString())
+        .not("status", "in", '("closed","approved","rejected")')
+        .order("start_time", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!profile && !activeShift,
   });
 
   // Today's tasks
@@ -111,16 +136,66 @@ export default function SupportWorkerShift() {
     },
   });
 
+  // Handle clock-in attempt — checks 30-min early restriction
+  const handleClockInAttempt = () => {
+    // Use scheduled_start if set, otherwise fall back to start_time
+    const shiftStart = nextUpcomingShift?.scheduled_start || nextUpcomingShift?.start_time;
+
+    if (shiftStart) {
+      const scheduledStart = new Date(shiftStart);
+      const now = new Date();
+      const minutesUntilShift = (scheduledStart.getTime() - now.getTime()) / (1000 * 60);
+
+      if (minutesUntilShift > 30) {
+        // Too early — show denial animation
+        setEarlyClockInScheduledStart(scheduledStart);
+        setEarlyClockInOpen(true);
+        return;
+      }
+    }
+
+    // No scheduled shift at all — block with toast
+    if (!nextUpcomingShift) {
+      toast({
+        title: "No shift scheduled",
+        description: "You don't have a shift scheduled. Please contact your team leader.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Within 30-min window — proceed
+    clockIn.mutate();
+  };
+
   // Clock In with GPS validation
   const clockIn = useMutation({
     mutationFn: async () => {
       const pos = await getPosition();
 
-      // Check client location if set
-      const clientId = null; // Could be set via a client selector
       let locationValid: boolean | null = null;
 
-      // Insert the shift
+      // If clocking into a scheduled shift, update it to open
+      if (nextUpcomingShift) {
+        const { data: shift, error } = await supabase.from("shifts").update({
+          start_time: new Date().toISOString(),
+          status: "open" as const,
+          clock_in_lat: pos.lat,
+          clock_in_lng: pos.lng,
+          clock_in_location_valid: locationValid,
+        }).eq("id", nextUpcomingShift.id).select().single();
+        if (error) throw error;
+
+        await log("clock_in", "shift", shift.id, { lat: pos.lat, lng: pos.lng, scheduled: true });
+
+        setHandoverType("incoming");
+        setHandoverChecked(HANDOVER_ITEMS.map(() => false));
+        setHandoverChecklistOpen(true);
+
+        return shift;
+      }
+
+      // No scheduled shift — create ad-hoc
       const { data: shift, error } = await supabase.from("shifts").insert({
         profile_id: profile!.id,
         start_time: new Date().toISOString(),
@@ -128,13 +203,11 @@ export default function SupportWorkerShift() {
         clock_in_lat: pos.lat,
         clock_in_lng: pos.lng,
         clock_in_location_valid: locationValid,
-        client_id: clientId,
       }).select().single();
       if (error) throw error;
 
       await log("clock_in", "shift", shift.id, { lat: pos.lat, lng: pos.lng, location_valid: locationValid });
 
-      // After clock-in, show incoming handover checklist
       setHandoverType("incoming");
       setHandoverChecked(HANDOVER_ITEMS.map(() => false));
       setHandoverChecklistOpen(true);
@@ -143,6 +216,7 @@ export default function SupportWorkerShift() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sw-active-shift"] });
+      queryClient.invalidateQueries({ queryKey: ["sw-next-scheduled"] });
       toast({ title: "Clocked in successfully" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -339,7 +413,7 @@ export default function SupportWorkerShift() {
           </p>
         </div>
         {!activeShift ? (
-          <Button onClick={() => clockIn.mutate()} disabled={clockIn.isPending || geoLoading}>
+          <Button onClick={handleClockInAttempt} disabled={clockIn.isPending || geoLoading}>
             <Play className="mr-2 h-4 w-4" /> {geoLoading ? "Getting location..." : "Clock In"}
           </Button>
         ) : (
@@ -543,6 +617,13 @@ export default function SupportWorkerShift() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Early Clock-In Denial */}
+      <EarlyClockInDialog
+        open={earlyClockInOpen}
+        onOpenChange={setEarlyClockInOpen}
+        scheduledStart={earlyClockInScheduledStart}
+      />
 
       {/* Handover Checklist Dialog */}
       <Dialog open={handoverChecklistOpen} onOpenChange={setHandoverChecklistOpen}>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { Play, Square, Send, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
+import EarlyClockInDialog from "@/components/shift/EarlyClockInDialog";
 
 export default function Shifts() {
   const { profile } = useAuth();
@@ -18,6 +20,9 @@ export default function Shifts() {
   const { getPosition, loading: geoLoading } = useGeolocation();
   const { log } = useAuditLog();
   const isDirector = profile?.role === "director";
+
+  const [earlyClockInOpen, setEarlyClockInOpen] = useState(false);
+  const [earlyClockInScheduledStart, setEarlyClockInScheduledStart] = useState<Date>(new Date());
 
   const { data: shifts = [] } = useQuery({
     queryKey: ["shifts"],
@@ -49,6 +54,51 @@ export default function Shifts() {
     },
     enabled: !!profile && !isDirector,
   });
+
+  // Next upcoming shift for early clock-in check
+  const { data: nextUpcomingShift } = useQuery({
+    queryKey: ["shifts-next-upcoming"],
+    queryFn: async () => {
+      const now = new Date();
+      const { data } = await supabase
+        .from("shifts")
+        .select("id, start_time, end_time, scheduled_start, scheduled_end, client_id, status")
+        .eq("profile_id", profile!.id)
+        .gte("start_time", now.toISOString())
+        .not("status", "in", '("closed","approved","rejected")')
+        .order("start_time", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!profile && !isDirector,
+  });
+
+  const handleStartShiftAttempt = () => {
+    const shiftStart = nextUpcomingShift?.scheduled_start || nextUpcomingShift?.start_time;
+
+    if (shiftStart) {
+      const scheduledStart = new Date(shiftStart);
+      const now = new Date();
+      const minutesUntilShift = (scheduledStart.getTime() - now.getTime()) / (1000 * 60);
+      if (minutesUntilShift > 30) {
+        setEarlyClockInScheduledStart(scheduledStart);
+        setEarlyClockInOpen(true);
+        return;
+      }
+    }
+
+    if (!nextUpcomingShift) {
+      toast({
+        title: "No shift scheduled",
+        description: "You don't have a shift scheduled. Please contact your team leader.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    startShift.mutate();
+  };
 
   const startShift = useMutation({
     mutationFn: async () => {
@@ -142,7 +192,7 @@ export default function Shifts() {
           <p className="text-muted-foreground">{isDirector ? "All staff shifts" : "Manage your shifts"}</p>
         </div>
         {!isDirector && !activeShift && (
-          <Button onClick={() => startShift.mutate()} disabled={geoLoading}>
+          <Button onClick={handleStartShiftAttempt} disabled={geoLoading}>
             <Play className="mr-2 h-4 w-4" /> Start Shift
           </Button>
         )}
@@ -194,6 +244,11 @@ export default function Shifts() {
           ))
         )}
       </div>
+      <EarlyClockInDialog
+        open={earlyClockInOpen}
+        onOpenChange={setEarlyClockInOpen}
+        scheduledStart={earlyClockInScheduledStart}
+      />
     </DashboardLayout>
   );
 }

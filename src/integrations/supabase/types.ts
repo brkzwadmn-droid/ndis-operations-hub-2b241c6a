@@ -700,6 +700,8 @@ export type Database = {
           id: string
           notes: string | null
           profile_id: string
+          scheduled_start: string | null
+          scheduled_end: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["shift_status"]
           updated_at: string
@@ -718,6 +720,8 @@ export type Database = {
           id?: string
           notes?: string | null
           profile_id: string
+          scheduled_start?: string | null
+          scheduled_end?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
           updated_at?: string
@@ -736,6 +740,8 @@ export type Database = {
           id?: string
           notes?: string | null
           profile_id?: string
+          scheduled_start?: string | null
+          scheduled_end?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
           updated_at?: string
@@ -929,7 +935,7 @@ export type Database = {
       company_enum: "mars_hill" | "rehoboth"
       employment_type_enum: "payroll" | "abn_contractor"
       finance_type: "income" | "expense"
-      shift_status: "open" | "closed" | "submitted" | "approved" | "rejected"
+      shift_status: "scheduled" | "open" | "closed" | "submitted" | "approved" | "rejected"
       task_status: "pending" | "in_progress" | "completed"
     }
     CompositeTypes: {
@@ -1061,7 +1067,7 @@ export const Constants = {
       app_role: ["director", "admin", "manager", "team_leader", "support_worker"],
       approval_status: ["pending", "approved", "rejected"],
       finance_type: ["income", "expense"],
-      shift_status: ["open", "closed", "submitted", "approved", "rejected"],
+      shift_status: ["scheduled", "open", "closed", "submitted", "approved", "rejected"],
       task_status: ["pending", "in_progress", "completed"],
     },
   },
